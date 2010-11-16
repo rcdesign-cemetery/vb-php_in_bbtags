@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<product productid="rcd_php_in_bbtags" active="1">
+	<title>PHP in BBcode Definitions</title>
+	<description>Enable PHP in Custom Tags definition</description>
+	<version>0.1</version>
+	<url><![CDATA[http://www.vbulletin.org/forum/misc.php?do=producthelp&pid=rcd_php_in_bbtags]]></url>
+	<versioncheckurl><![CDATA[http://www.vbulletin.org/forum/misc.php?do=productcheck&pid=rcd_php_in_bbtags]]></versioncheckurl>
+	<apm_releasedate>943912800</apm_releasedate>
+	<apm_author />
+	<apm_relatedurl />
+	<apm_extrainfo />
+	<apm_extraedit />
+	<dependencies>
+	</dependencies>
+	<codes>
+	</codes>
+	<templates>
+	</templates>
+	<stylevardfns>
+	</stylevardfns>
+	<stylevars>
+	</stylevars>
+	<plugins>
+		<plugin active="1" executionorder="5">
+			<title>Define callback for bbtags with php replacement.</title>
+			<hookname>bbcode_create</hookname>
+			<phpcode><![CDATA[if (!function_exists('rcd_bbtag_php_execute'))
+{
+    function rcd_bbtag_php_execute(&$parser, $value, $option)
+    {
+        $current_tag = $parser->current_tag;
+        $has_option = $current_tag['option'] !== false ? 'option' : 'no_option';
+        $tag_info =& $parser->tag_list["$has_option"]["$current_tag[name]"];
+       
+        if (eval($tag_info['php_code']) === FALSE)
+        {
+            $result =  'Tag "' .$current_tag['name'] . " parse error";     
+        }
+        return $result;
+
+    }
+}
+
+if (!empty($this->registry->bbcodecache) 
+    && is_array($this->registry->bbcodecache))
+{
+    foreach($this->registry->bbcodecache as &$tag)
+    {
+        if (substr($tag['bbcodereplacement'],0,4) == "#php")
+        {
+            $has_option = $tag['twoparams'] ? 'option' : 'no_option';
+            
+            // Some parser classes like WYSYWIG set dummy callbacks to prohibit parsing.
+            // We have to check if callback is empty before we redeclare it.
+            if (!isset($this->tag_list[$has_option][$tag[bbcodetag]]['callback']))
+            {
+                $this->tag_list[$has_option][$tag[bbcodetag]]['callback'] = 'handle_external';
+                $this->tag_list[$has_option][$tag[bbcodetag]]['external_callback'] = 'rcd_bbtag_php_execute';
+                $this->tag_list[$has_option][$tag[bbcodetag]]['php_code'] = 
+                    str_replace("#php", "", $tag['bbcodereplacement']);
+
+                // Remove tag replacement in order to force callback processing.
+                unset($this->tag_list[$has_option][$tag[bbcodetag]]['html']);
+            }
+        }
+    }
+}]]></phpcode>
+		</plugin>
+	</plugins>
+	<phrases>
+	</phrases>
+	<options>
+	</options>
+	<helptopics>
+	</helptopics>
+	<cronentries>
+	</cronentries>
+	<faqentries>
+	</faqentries>
+	<templateedits>
+	</templateedits>
+</product>
